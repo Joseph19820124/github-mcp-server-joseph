@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GitHub MCP SSE Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #events {
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 400px;
+            overflow-y: auto;
+            background-color: #f5f5f5;
+        }
+        .event {
+            margin-bottom: 10px;
+            padding: 5px;
+            background-color: white;
+            border-radius: 3px;
+        }
+        .error {
+            color: red;
+        }
+        .connected {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>GitHub MCP SSE Client</h1>
+    <div>
+        <input type="text" id="owner" placeholder="Owner" value="facebook">
+        <input type="text" id="repo" placeholder="Repository" value="react">
+        <button onclick="connect()">Connect</button>
+        <button onclick="disconnect()">Disconnect</button>
+    </div>
+    <h2>Events:</h2>
+    <div id="events"></div>
+
+    <script>
+        let eventSource = null;
+        
+        function connect() {
+            const owner = document.getElementById('owner').value;
+            const repo = document.getElementById('repo').value;
+            
+            if (eventSource) {
+                eventSource.close();
+            }
+            
+            const url = `http://localhost:3000/sse/github/${owner}/${repo}`;
+            eventSource = new EventSource(url);
+            
+            eventSource.onopen = function() {
+                addEvent('Connected to SSE stream', 'connected');
+            };
+            
+            eventSource.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                addEvent(JSON.stringify(data, null, 2));
+            };
+            
+            eventSource.onerror = function(error) {
+                addEvent('Error: Connection failed', 'error');
+                eventSource.close();
+            };
+        }
+        
+        function disconnect() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+                addEvent('Disconnected from SSE stream', 'error');
+            }
+        }
+        
+        function addEvent(message, className = '') {
+            const events = document.getElementById('events');
+            const event = document.createElement('div');
+            event.className = 'event ' + className;
+            event.textContent = new Date().toLocaleTimeString() + ': ' + message;
+            events.insertBefore(event, events.firstChild);
+        }
+    </script>
+</body>
+</html>
